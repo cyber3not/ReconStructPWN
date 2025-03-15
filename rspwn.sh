@@ -1,3 +1,4 @@
+#!/bin/bash
 source ./lib.sh
 
 ## Functions
@@ -60,7 +61,7 @@ start="$(date +%s)"
 SCAN_PATH="$WDIR/scans/$TARGET"
 SCRIPT_PATH="$WDIR/scantypes/"
 LOGDATE="$(date +%Y-%m-%d_%H-%M-%S)"
-LOGFILE="$SCAN_PATH/main_$LOGDATE".txt
+LOGFILE="$LOGDATE".txt
 
 ### Export Vars for Subscripts
 export URL DOMAIN IP WDIR
@@ -77,26 +78,32 @@ sleep 1
 
 ### Go
 scripts=("$SCRIPT_PATH"/*.sh)
-options=("${scripts[@]}" "Abort")
+
+# Entferne den absoluten Pfad aus den Dateinamen
+script_names=()
+for script in "${scripts[@]}"; do
+    script_names+=("$(basename "$script")")
+done
+
+options=("${script_names[@]}" "Abort")
 
 menu_msg "Choose a scan type that you want to execute on $TARGET:"
 select opt in "${options[@]}"; do
-    case $opt in
-        "$script_dir"/*.sh)
-            echo "Start $opt ..."
-            bash "$opt" | tee -a $LOGFILE
-            break
-            ;;
-        "Abort")
-            echo "Abort"
-            exit 0
-            ;;
-        *)
-            echo "Invalid input, please select a number from the list."
-            ;;
-    esac
-done
+    if [[ "$opt" == "Abort" ]]; then
+        echo "Abort"
+        exit 0
+    elif [[ -n "$opt" ]]; then
+        echo "Start $opt ..."
 
+        SCANTYPE_FOLDER=$(echo $opt | cut -d '.' -f 1)
+        mkdir $SCANTYPE_FOLDER
+
+        bash "$SCRIPT_PATH/$opt" | tee -a ./$SCANTYPE_FOLDER/$LOGFILE
+        break
+    else
+        echo "Invalid input, please select a number from the list."
+    fi
+done
 
 
 ## End
